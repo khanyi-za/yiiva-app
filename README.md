@@ -1,50 +1,74 @@
-# Welcome to your Expo app 👋
+# Yiiva - Artist Marketplace Mobile App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+<div align="center">
+  <img src="./assets/images/ICON_BLACK.png" alt="Yiiva Logo" width="120">
+  
+  **Connecting Artists with Art Lovers**
+  
+  A React Native mobile marketplace that empowers creators and connects them with customers who appreciate unique, handcrafted art and design.
+</div>
 
-## Get started
+## 📱 About Yiiva
 
-1. Install dependencies
+Yiiva is a social commerce platform specifically designed for the South African creative community. It bridges the gap between talented local artists and art enthusiasts, providing a beautiful, intuitive space for discovering, sharing, and purchasing authentic creative works.
 
-   ```bash
-   npm install
-   ```
+## 📚 Documentation
 
-2. Start the app
+For comprehensive documentation, please visit our **[docs folder](./docs/)**:
 
-   ```bash
-   npx expo start
-   ```
+- **[App Overview](./docs/app-overview.md)** - Detailed app description and features
+- **[Getting Started](./docs/getting-started.md)** - Development setup guide
+- **[Technical Architecture](./docs/technical-architecture.md)** - Tech stack and structure
+- **[Feature Documentation](./docs/features/)** - Individual feature guides
+- **[Contributing](./docs/contributing.md)** - How to contribute
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## 🚀 Quick Start
 
 ```bash
-npm run reset-project
+# Install dependencies
+npm install
+
+# Start development server
+npx expo start
+
+# Run on iOS/Android
+npm run ios     # or npm run android
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## ✨ Key Features
 
-## Learn more
+- **🏠 Home Feed** - Instagram-style product showcase
+- **🔍 Smart Search** - Advanced filtering and discovery
+- **🌟 Explore Page** - Featured collections and trending artists  
+- **👤 Artist Profiles** - Immersive profile experiences
+- **🎬 Video Player** - TikTok-style full-screen videos
 
-To learn more about developing your project with Expo, look at the following resources:
+## 🛠️ Tech Stack
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- **React Native** with Expo SDK 53.0.20
+- **TypeScript** for type safety
+- **Expo Router** for navigation
+- **Custom Components** for consistent UI
 
-## Join the community
+## 📁 Project Structure
 
-Join our community of developers creating universal apps.
+```
+app/
+├── (tabs)/           # Main navigation
+├── artist/           # Artist profiles  
+└── video-player.tsx  # Video experience
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+components/           # Reusable UI components
+docs/                # Documentation
+assets/              # Images and fonts
+```
+
+## 📄 License
+
+MIT License - see LICENSE file for details.
+
+---
+
+<div align="center">
+  <strong>Built with ❤️ for the South African creative community</strong>
+</div>

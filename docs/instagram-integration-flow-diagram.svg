@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="800" viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="instagramGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#833ab4;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#fd1d1d;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#fcb045;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="yiivaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a1a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#333;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="aiGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8BC34A;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Arrow marker -->
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+     refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
+    </marker>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="800" fill="#f8f9fa"/>
+  
+  <!-- Title -->
+  <text x="600" y="40" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#333">
+    Instagram → Yiiva Integration Flow
+  </text>
+  
+  <!-- Phase 1: Instagram Content -->
+  <g id="instagram-section">
+    <!-- Instagram container -->
+    <rect x="50" y="80" width="300" height="600" rx="15" fill="url(#instagramGradient)" opacity="0.1" stroke="url(#instagramGradient)" stroke-width="2"/>
+    
+    <!-- Instagram logo/title -->
+    <circle cx="200" cy="120" r="25" fill="url(#instagramGradient)"/>
+    <text x="200" y="127" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">IG</text>
+    <text x="200" y="165" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#333">Instagram Content</text>
+    
+    <!-- Sample Instagram posts -->
+    <g id="instagram-posts">
+      <!-- Post 1 -->
+      <rect x="80" y="190" width="100" height="100" rx="8" fill="white" stroke="#ddd"/>
+      <rect x="85" y="195" width="90" height="70" rx="4" fill="#e1306c" opacity="0.3"/>
+      <text x="130" y="240" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">Handmade Ring</text>
+      <text x="130" y="255" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#999">#handmade #jewelry</text>
+      <text x="130" y="270" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#999">❤️ 124 💬 8</text>
+      
+      <!-- Post 2 -->
+      <rect x="200" y="190" width="100" height="100" rx="8" fill="white" stroke="#ddd"/>
+      <rect x="205" y="195" width="90" height="70" rx="4" fill="#fd1d1d" opacity="0.3"/>
+      <text x="250" y="240" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">Ceramic Vase</text>
+      <text x="250" y="255" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#999">#ceramics #homedecor</text>
+      <text x="250" y="270" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#999">❤️ 89 💬 5</text>
+      
+      <!-- Post 3 -->
+      <rect x="80" y="310" width="100" height="100" rx="8" fill="white" stroke="#ddd"/>
+      <rect x="85" y="315" width="90" height="70" rx="4" fill="#fcb045" opacity="0.3"/>
+      <text x="130" y="360" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">Vintage Jacket</text>
+      <text x="130" y="375" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#999">#vintage #fashion</text>
+      <text x="130" y="390" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#999">❤️ 156 💬 12</text>
+      
+      <!-- Batch indicator -->
+      <rect x="200" y="310" width="100" height="100" rx="8" fill="white" stroke="#ddd" stroke-dasharray="5,5"/>
+      <text x="250" y="350" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#999">+97 more</text>
+      <text x="250" y="365" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#999">posts</text>
+    </g>
+    
+    <!-- Instagram Graph API indicator -->
+    <rect x="70" y="430" width="260" height="50" rx="25" fill="white" stroke="url(#instagramGradient)" stroke-width="2"/>
+    <text x="200" y="450" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">Instagram Graph API</text>
+    <text x="200" y="465" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666">Secure content pulling</text>
+    
+    <!-- Connect button -->
+    <rect x="120" y="500" width="160" height="40" rx="20" fill="url(#instagramGradient)"/>
+    <text x="200" y="525" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">Connect Instagram</text>
+  </g>
+  
+  <!-- Arrow 1: Instagram to AI -->
+  <path d="M 360 380 Q 420 380 420 380 L 480 380" stroke="#666" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+  <text x="420" y="370" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#666">Pull Content</text>
+  
+  <!-- Phase 2: AI Processing -->
+  <g id="ai-section">
+    <!-- AI container -->
+    <rect x="500" y="80" width="200" height="600" rx="15" fill="url(#aiGradient)" opacity="0.1" stroke="url(#aiGradient)" stroke-width="2"/>
+    
+    <!-- AI title -->
+    <circle cx="600" cy="120" r="25" fill="url(#aiGradient)"/>
+    <text x="600" y="127" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">AI</text>
+    <text x="600" y="165" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#333">AI Processing</text>
+    
+    <!-- AI Analysis steps -->
+    <g id="ai-steps">
+      <!-- Image Recognition -->
+      <rect x="520" y="190" width="160" height="60" rx="8" fill="white" stroke="#4CAF50" stroke-width="1"/>
+      <text x="600" y="210" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">🔍 Image Analysis</text>
+      <text x="600" y="225" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">Object detection</text>
+      <text x="600" y="238" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">Style recognition</text>
+      
+      <!-- Text Analysis -->
+      <rect x="520" y="270" width="160" height="60" rx="8" fill="white" stroke="#4CAF50" stroke-width="1"/>
+      <text x="600" y="290" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">📝 Text Analysis</text>
+      <text x="600" y="305" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">Price extraction</text>
+      <text x="600" y="318" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">Product details</text>
+      
+      <!-- Smart Categorization -->
+      <rect x="520" y="350" width="160" height="60" rx="8" fill="white" stroke="#4CAF50" stroke-width="1"/>
+      <text x="600" y="370" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">🏷️ Categorization</text>
+      <text x="600" y="385" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">Hashtag mapping</text>
+      <text x="600" y="398" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">Auto-tagging</text>
+      
+      <!-- Enhancement -->
+      <rect x="520" y="430" width="160" height="60" rx="8" fill="white" stroke="#4CAF50" stroke-width="1"/>
+      <text x="600" y="450" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">✨ Enhancement</text>
+      <text x="600" y="465" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">Commerce optimization</text>
+      <text x="600" y="478" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">SEO improvements</text>
+    </g>
+    
+    <!-- Confidence indicator -->
+    <rect x="520" y="510" width="160" height="30" rx="15" fill="white" stroke="#4CAF50" stroke-width="1"/>
+    <circle cx="540" cy="525" r="6" fill="#4CAF50"/>
+    <text x="555" y="530" font-family="Arial, sans-serif" font-size="10" fill="#333">90% Confidence</text>
+  </g>
+  
+  <!-- Arrow 2: AI to Yiiva -->
+  <path d="M 710 380 Q 770 380 770 380 L 830 380" stroke="#666" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+  <text x="770" y="370" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#666">Enhanced Data</text>
+  
+  <!-- Phase 3: Yiiva Integration -->
+  <g id="yiiva-section">
+    <!-- Yiiva container -->
+    <rect x="850" y="80" width="300" height="600" rx="15" fill="url(#yiivaGradient)" opacity="0.1" stroke="url(#yiivaGradient)" stroke-width="2"/>
+    
+    <!-- Yiiva logo/title -->
+    <rect x="975" y="95" width="50" height="50" rx="8" fill="url(#yiivaGradient)"/>
+    <text x="1000" y="127" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">Y</text>
+    <text x="1000" y="165" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#333">Yiiva Catalogue</text>
+    
+    <!-- Enhanced product cards -->
+    <g id="yiiva-products">
+      <!-- Product 1 - Enhanced -->
+      <rect x="880" y="190" width="120" height="140" rx="8" fill="white" stroke="#1a1a1a"/>
+      <rect x="885" y="195" width="110" height="80" rx="4" fill="#e1306c" opacity="0.3"/>
+      <text x="940" y="290" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">Handmade Silver Ring</text>
+      <text x="940" y="305" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">Sterling Silver • Size 7</text>
+      <text x="940" y="318" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">R650</text>
+      
+      <!-- Product 2 - Enhanced -->
+      <rect x="1020" y="190" width="120" height="140" rx="8" fill="white" stroke="#1a1a1a"/>
+      <rect x="1025" y="195" width="110" height="80" rx="4" fill="#fd1d1d" opacity="0.3"/>
+      <text x="1080" y="290" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#333">Ceramic Vase</text>
+      <text x="1080" y="305" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#666">Handmade • 25cm H</text>
+      <text x="1080" y="318" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#333">R450</text>
+      
+      <!-- Batch import indicator -->
+      <rect x="880" y="350" width="260" height="80" rx="8" fill="white" stroke="#1a1a1a" stroke-dasharray="5,5"/>
+      <text x="1010" y="380" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">+ 98 Products Ready</text>
+      <text x="1010" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#666">From Instagram batch import</text>
+      <rect x="920" y="405" width="80" height="20" rx="10" fill="#4CAF50"/>
+      <text x="960" y="418" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" font-weight="bold" fill="white">Approve All</text>
+      <rect x="1020" y="405" width="80" height="20" rx="10" fill="#ff9800"/>
+      <text x="1060" y="418" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" font-weight="bold" fill="white">Review</text>
+    </g>
+    
+    <!-- Features list -->
+    <rect x="870" y="450" width="270" height="120" rx="8" fill="white" stroke="#1a1a1a" stroke-width="1"/>
+    <text x="1005" y="470" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">Commerce Features</text>
+    <text x="880" y="490" font-family="Arial, sans-serif" font-size="10" fill="#666">✓ Auto-pricing suggestions</text>
+    <text x="880" y="505" font-family="Arial, sans-serif" font-size="10" fill="#666">✓ Smart categorization</text>
+    <text x="880" y="520" font-family="Arial, sans-serif" font-size="10" fill="#666">✓ SEO-optimized descriptions</text>
+    <text x="880" y="535" font-family="Arial, sans-serif" font-size="10" fill="#666">✓ Inventory management</text>
+    <text x="880" y="550" font-family="Arial, sans-serif" font-size="10" fill="#666">✓ Sales analytics</text>
+    
+    <!-- Go live button -->
+    <rect x="920" y="590" width="160" height="40" rx="20" fill="url(#yiivaGradient)"/>
+    <text x="1000" y="615" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">Go Live!</text>
+  </g>
+  
+  <!-- Process flow indicators -->
+  <g id="process-indicators">
+    <!-- Step numbers -->
+    <circle cx="200" cy="70" r="15" fill="#e1306c"/>
+    <text x="200" y="76" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">1</text>
+    
+    <circle cx="600" cy="70" r="15" fill="#4CAF50"/>
+    <text x="600" y="76" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">2</text>
+    
+    <circle cx="1000" cy="70" r="15" fill="#1a1a1a"/>
+    <text x="1000" y="76" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">3</text>
+  </g>
+  
+  <!-- Benefits callout -->
+  <rect x="400" y="720" width="400" height="60" rx="8" fill="#f0f8ff" stroke="#007AFF" stroke-width="1"/>
+  <text x="600" y="740" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#007AFF">Key Benefits</text>
+  <text x="420" y="760" font-family="Arial, sans-serif" font-size="10" fill="#333">• Zero learning curve - familiar content becomes sellable</text>
+  <text x="420" y="775" font-family="Arial, sans-serif" font-size="10" fill="#333">• Massive time savings - entire catalogue ready in minutes</text>
+</svg>
