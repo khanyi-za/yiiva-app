@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Dimensions,
   ScrollView,
@@ -8,277 +9,393 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
+  Animated,
+  Modal,
+  Pressable,
+  Linking,
+  ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/ThemedText';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { MasonryGrid } from '@/components/MasonryGrid';
-
-interface ArtistProduct {
-  id: string;
-  title: string;
-  price: string;
-  image: any;
-  category: string;
-  dimensions?: string;
-}
-
-interface Artist {
-  id: string;
-  name: string;
-  displayName: string;
-  profileImage: any;
-  heroImage: any;
-  followers: string;
-  following: string;
-  posts: string;
-  bio: string;
-  location: string;
-  isFollowing: boolean;
-  categories: string[];
-  products: ArtistProduct[];
-}
+import { EvenGrid } from '@/components/EvenGrid';
+import { useSocialStore } from '@/lib/social-store';
+import { getLocalAsset } from '@/lib/local-assets';
+import { api } from '@/lib/api-client';
+import { useQuery } from '@tanstack/react-query';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-// Mock artist data - in real app this would come from API
-const mockArtists: { [key: string]: Artist } = {
-  'masonwabe-ntloko': {
-    id: 'masonwabe-ntloko',
-    name: 'masonwabe-ntloko',
-    displayName: 'MASONWABE NTLOKO',
-    profileImage: require('@/assets/images/ masonwabe_profile_pic.png'),
-    heroImage: require('@/assets/design_screenshots/artist_profile_hero.png'),
-    followers: '12.4K',
-    following: '432',
-    posts: '127',
-    bio: 'Traditional craft meets modern art. Creating pieces that tell stories of our heritage.',
-    location: 'Johannesburg, South Africa',
-    isFollowing: false,
-    categories: ['All', 'Knitwear', 'Rugs', 'Paintings'],
-    products: [
-      {
-        id: '1',
-        title: 'Sisipho rectangular Rug',
-        price: 'R3,600',
-        image: require('@/assets/images/masonwabe_jersey.png'),
-        category: 'Rugs',
-        dimensions: '120 x 180cm'
-      },
-      {
-        id: '2', 
-        title: 'Circular Rug',
-        price: 'R4,200',
-        image: require('@/assets/images/jersey_below.png'),
-        category: 'Rugs',
-        dimensions: '150cm diameter'
-      },
-      {
-        id: '3',
-        title: 'Heritage Painting',
-        price: 'R2,800',
-        image: require('@/assets/images/masonwabe_jersey.png'),
-        category: 'Paintings',
-        dimensions: '60 x 80cm'
-      },
-      {
-        id: '4',
-        title: 'Traditional Knit Sweater',
-        price: 'R1,450',
-        image: require('@/assets/images/jersey_below.png'),
-        category: 'Knitwear',
-      },
-      {
-        id: '5',
-        title: 'Modern Art Piece',
-        price: 'R5,200',
-        image: require('@/assets/images/masonwabe_jersey.png'),
-        category: 'Paintings',
-        dimensions: '90 x 120cm'
-      },
-      {
-        id: '6',
-        title: 'Woven Wall Art',
-        price: 'R3,100',
-        image: require('@/assets/images/jersey_below.png'),
-        category: 'Rugs',
-        dimensions: '80 x 100cm'
-      }
-    ]
-  },
-  'thabo-designs': {
-    id: 'thabo-designs',
-    name: 'thabo-designs', 
-    displayName: 'THABO DESIGNS',
-    profileImage: require('@/assets/images/ masonwabe_profile_pic.png'),
-    heroImage: require('@/assets/design_screenshots/artist_profile_hero.png'),
-    followers: '8.9K',
-    following: '256',
-    posts: '89',
-    bio: 'Street art meets fashion. Contemporary designs inspired by urban culture.',
-    location: 'Cape Town, South Africa',
-    isFollowing: true,
-    categories: ['All', 'Fashion', 'Art', 'Accessories'],
-    products: [
-      {
-        id: '1',
-        title: 'Urban Collection Tee',
-        price: 'R450',
-        image: require('@/assets/images/jersey_below.png'),
-        category: 'Fashion',
-      },
-      {
-        id: '2',
-        title: 'Street Art Print',
-        price: 'R1,200',
-        image: require('@/assets/images/masonwabe_jersey.png'),
-        category: 'Art',
-        dimensions: '50 x 70cm'
-      }
-    ]
-  }
-};
+// Separate component for media items to avoid hook order violations
+function HeroMediaItem({
+  media,
+  index,
+  currentMediaIndex,
+  isVideoMuted,
+}: {
+  media: { url: string; type: string; localAsset: any };
+  index: number;
+  currentMediaIndex: number;
+  isVideoMuted: boolean;
+}) {
+  const videoPlayer =
+    media.type === 'video'
+      ? useVideoPlayer(media.localAsset, (player) => {
+          player.loop = true;
+          player.muted = isVideoMuted;
+          if (index === currentMediaIndex) {
+            player.play();
+          }
+        })
+      : null;
+
+  return (
+    <View style={styles.heroMediaContainer}>
+      {media.type === 'image' ? (
+        <Image source={media.localAsset} style={styles.heroMedia} contentFit="cover" />
+      ) : (
+        <VideoView
+          player={videoPlayer!}
+          style={styles.heroMedia}
+          contentFit="cover"
+          nativeControls={false}
+        />
+      )}
+    </View>
+  );
+}
 
 export default function ArtistProfileScreen() {
   const params = useLocalSearchParams();
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [isFollowing, setIsFollowing] = useState(false);
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+  const [isVideoMuted, setIsVideoMuted] = useState(true);
+  const [showContactModal, setShowContactModal] = useState(false);
   const insets = useSafeAreaInsets();
+  const scrollX = useRef(new Animated.Value(0)).current;
 
   const artistId = params.artistId as string;
-  const artist = mockArtists[artistId];
 
-  React.useEffect(() => {
-    if (artist) {
-      setIsFollowing(artist.isFollowing);
-    }
-  }, [artist]);
+  const { toggleFollow, isFollowing: isFollowingStore } = useSocialStore();
 
-  if (!artist) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.errorContainer}>
-          <ThemedText style={styles.errorText}>Artist not found</ThemedText>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ThemedText style={styles.backButtonText}>Go Back</ThemedText>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  // Fetch merchant data from API
+  const {
+    data: merchantData,
+    isLoading: merchantLoading,
+    error: merchantError,
+  } = useQuery({
+    queryKey: ['merchant', artistId],
+    queryFn: () => api.getMerchantByUsername(artistId),
+    staleTime: 10 * 60 * 1000, // Fresh for 10 minutes
+  });
 
-  const filteredProducts = selectedCategory === 'All' 
-    ? artist.products 
-    : artist.products.filter(product => product.category === selectedCategory);
+  const merchant = merchantData?.merchant || null;
+
+  // Fetch merchant products from API
+  const {
+    data: merchantProductsData,
+    isLoading: productsLoading,
+  } = useQuery({
+    queryKey: ['merchant-products', artistId, selectedCategory],
+    queryFn: () =>
+      api.getMerchantProducts(artistId, {
+        clothingType: selectedCategory !== 'All' ? selectedCategory : undefined,
+        limit: 50, // Get all products for now
+      }),
+    enabled: !!artistId, // Only fetch when artistId exists
+    staleTime: 5 * 60 * 1000, // Fresh for 5 minutes
+  });
+
+  const products = merchantProductsData?.products || [];
+  const categories = merchantProductsData?.categories || ['All'];
+  const isFollowing = merchant ? isFollowingStore(merchant.id) : false;
+
+  // Prepare grid data
+  const gridData = React.useMemo(
+    () =>
+      products.map(product => ({
+        id: product.id,
+        image: getLocalAsset(product.primaryImage),
+        title: product.name,
+        price: `${product.currency} ${product.price.toFixed(2)}`,
+      })),
+    [products]
+  );
+
+  // Get hero media with local assets
+  const heroMediaItems = React.useMemo(
+    () =>
+      merchant
+        ? merchant.heroMedia.map((url: string) => ({
+            url: url,
+            type: url.endsWith('.mp4') ? 'video' : 'image',
+            localAsset: getLocalAsset(url),
+          }))
+        : [],
+    [merchant]
+  );
+
+  // Get logo
+  const logoAsset = React.useMemo(
+    () => (merchant ? getLocalAsset(`/demo-assets/${merchant.username}/${merchant.logo}`) : null),
+    [merchant]
+  );
 
   const handleFollow = () => {
-    setIsFollowing(!isFollowing);
+    if (merchant) {
+      toggleFollow(merchant.id);
+    }
   };
 
   const handleContact = () => {
-    console.log('Contact artist:', artist.name);
-    // Implement contact functionality
+    setShowContactModal(true);
   };
 
-  const handleProductPress = (product: ArtistProduct) => {
-    console.log('Product pressed:', product.title);
-    // Navigate to product detail page
+  const handleSendMessage = () => {
+    setShowContactModal(false);
+    if (merchant) {
+      router.push(`/chat/${merchant.username}`);
+    }
+  };
+
+  const handleSendEmail = () => {
+    if (merchant) {
+      const email = merchant.email || `info@${merchant.username}.com`;
+      Linking.openURL(`mailto:${email}`);
+      setShowContactModal(false);
+    }
+  };
+
+  const handleGridItemPress = (item: any) => {
+    router.push(`/product/${item.id}`);
+  };
+
+  const handleMediaScroll = (event: any) => {
+    const scrollPosition = event.nativeEvent.contentOffset.x;
+    const index = Math.round(scrollPosition / screenWidth);
+    setCurrentMediaIndex(index);
+  };
+
+  const navigateToMedia = (index: number) => {
+    setCurrentMediaIndex(index);
+    scrollX.setValue(index * screenWidth);
+  };
+
+  const toggleVideoMute = () => {
+    setIsVideoMuted(!isVideoMuted);
   };
 
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Hero Section */}
-        <View style={[styles.heroSection, { height: (400 * 1.12 * 1.13 * 0.9 * 0.95) + insets.top }]}>
-          <Image source={artist.heroImage} style={styles.heroImage} />
-          
-          {/* Hero Overlay */}
-          <View style={styles.heroOverlay}>
-            {/* Close Button */}
-            <TouchableOpacity 
-              style={[styles.closeButton, { top: insets.top + 20 }]}
-              onPress={() => router.back()}
-            >
-              <IconSymbol name="xmark" size={24} color="#fff" />
-            </TouchableOpacity>
 
-            {/* Artist Name */}
-            <View style={[styles.artistNameContainer, { top: insets.top + 20 }]}>
-              <ThemedText style={styles.artistName}>{artist.displayName}</ThemedText>
+      {/* Loading State */}
+      {merchantLoading && (
+        <>
+          <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#000" />
+            <ThemedText style={styles.loadingText}>Loading artist profile...</ThemedText>
+          </View>
+        </>
+      )}
+
+      {/* Error State */}
+      {!merchantLoading && (merchantError || !merchant) && (
+        <>
+          <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+          <View style={styles.errorContainer}>
+            <ThemedText style={styles.errorText}>Unable to load artist profile</ThemedText>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+              <ThemedText style={styles.backButtonText}>Go Back</ThemedText>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
+
+      {/* Main Content */}
+      {!merchantLoading && !merchantError && merchant && (
+        <>
+          <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+
+      {/* Contact Modal */}
+      <Modal
+        visible={showContactModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowContactModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setShowContactModal(false)}
+          />
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <ThemedText style={styles.modalTitle}>
+                Contact {merchant?.displayName}
+              </ThemedText>
+              <TouchableOpacity
+                onPress={() => setShowContactModal(false)}
+                style={styles.modalCloseButton}
+              >
+                <IconSymbol name="xmark" size={20} color="#666" />
+              </TouchableOpacity>
             </View>
 
-            {/* Profile Picture */}
-            <View style={styles.profilePictureContainer}>
-              <Image source={artist.profileImage} style={styles.profilePicture} />
+            <View style={styles.modalOptions}>
+              <TouchableOpacity style={styles.contactOption} onPress={handleSendMessage}>
+                <View style={styles.contactOptionIcon}>
+                  <IconSymbol name="message" size={24} color="#007AFF" />
+                </View>
+                <View style={styles.contactOptionContent}>
+                  <ThemedText style={styles.contactOptionTitle}>
+                    Message {merchant?.displayName}
+                  </ThemedText>
+                  <ThemedText style={styles.contactOptionSubtitle}>
+                    Send a direct message
+                  </ThemedText>
+                </View>
+                <IconSymbol name="chevron.right" size={20} color="#ccc" />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.contactOption} onPress={handleSendEmail}>
+                <View style={styles.contactOptionIcon}>
+                  <IconSymbol name="envelope" size={24} color="#007AFF" />
+                </View>
+                <View style={styles.contactOptionContent}>
+                  <ThemedText style={styles.contactOptionTitle}>Email</ThemedText>
+                  <ThemedText style={styles.contactOptionSubtitle}>
+                    {merchant?.email || `info@${merchant?.username}.com`}
+                  </ThemedText>
+                </View>
+                <IconSymbol name="chevron.right" size={20} color="#ccc" />
+              </TouchableOpacity>
             </View>
           </View>
+        </View>
+      </Modal>
+
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Hero Section */}
+        <View style={[styles.heroSection, { height: screenWidth * 1.2 }]}>
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={handleMediaScroll}
+            scrollEventThrottle={16}
+            style={styles.heroCarousel}
+          >
+            {heroMediaItems.map((media, index) => (
+              <HeroMediaItem
+                key={index}
+                media={media}
+                index={index}
+                currentMediaIndex={currentMediaIndex}
+                isVideoMuted={isVideoMuted}
+              />
+            ))}
+          </ScrollView>
+
+          {/* Hero Overlay */}
+          <View style={styles.heroOverlay} />
+
+          {/* Back Button */}
+          <TouchableOpacity
+            style={[styles.closeButton, { top: insets.top + 10 }]}
+            onPress={() => router.back()}
+          >
+            <IconSymbol name="chevron.left" size={24} color="#fff" />
+          </TouchableOpacity>
+
+          {/* Mute Button */}
+          <TouchableOpacity
+            style={[styles.muteButton, { top: insets.top + 10 }]}
+            onPress={toggleVideoMute}
+          >
+            <IconSymbol
+              name={isVideoMuted ? 'speaker.slash' : 'speaker.wave.2'}
+              size={20}
+              color="#fff"
+            />
+          </TouchableOpacity>
+
+          {/* Profile Picture */}
+          <View style={styles.profilePictureContainer}>
+            <Image
+              source={logoAsset}
+              style={[styles.profilePicture, styles.profilePlaceholder]}
+              contentFit="cover"
+            />
+          </View>
+
+          {/* Dot Indicators */}
+          <View style={styles.dotContainer}>
+            {heroMediaItems.map((_, index) => (
+              <View
+                key={index}
+                style={[styles.dot, index === currentMediaIndex && styles.activeDot]}
+              />
+            ))}
+          </View>
+        </View>
+
+        {/* Merchant Name */}
+        <View style={styles.merchantNameSection}>
+          <ThemedText style={styles.merchantName}>{merchant.displayName}</ThemedText>
+          {merchant.isVerified && (
+            <IconSymbol name="checkmark.seal.fill" size={20} color="#007AFF" />
+          )}
         </View>
 
         {/* Action Buttons */}
         <View style={styles.actionsSection}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.followButton, isFollowing && styles.followingButton]}
             onPress={handleFollow}
           >
-            <ThemedText style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
+            <ThemedText
+              style={[styles.followButtonText, isFollowing && styles.followingButtonText]}
+            >
               {isFollowing ? 'Following' : 'Follow'}
             </ThemedText>
           </TouchableOpacity>
-
           <TouchableOpacity style={styles.contactButton} onPress={handleContact}>
             <ThemedText style={styles.contactButtonText}>Contact</ThemedText>
           </TouchableOpacity>
         </View>
 
-        {/* Stats Section */}
-        <View style={styles.statsSection}>
-          <View style={styles.statItem}>
-            <ThemedText style={styles.statNumber}>{artist.posts}</ThemedText>
-            <ThemedText style={styles.statLabel}>Posts</ThemedText>
-          </View>
-          <View style={styles.statItem}>
-            <ThemedText style={styles.statNumber}>{artist.followers}</ThemedText>
-            <ThemedText style={styles.statLabel}>Followers</ThemedText>
-          </View>
-          <View style={styles.statItem}>
-            <ThemedText style={styles.statNumber}>{artist.following}</ThemedText>
-            <ThemedText style={styles.statLabel}>Following</ThemedText>
-          </View>
-        </View>
-
         {/* Bio Section */}
         <View style={styles.bioSection}>
-          <ThemedText style={styles.bioText}>{artist.bio}</ThemedText>
+          <ThemedText style={styles.bioText}>{merchant.bio}</ThemedText>
           <View style={styles.locationContainer}>
-            <IconSymbol name="location" size={14} color="#666" />
-            <ThemedText style={styles.locationText}>{artist.location}</ThemedText>
+            <IconSymbol name="location.fill" size={14} color="#666" />
+            <ThemedText style={styles.locationText}>{merchant.location}</ThemedText>
           </View>
         </View>
 
         {/* Category Tabs */}
         <View style={styles.categorySection}>
-          <ScrollView 
-            horizontal 
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.categoryScrollContainer}
           >
-            {artist.categories.map((category) => (
+            {categories.map((category) => (
               <TouchableOpacity
                 key={category}
                 style={[
                   styles.categoryTab,
-                  selectedCategory === category && styles.selectedCategoryTab
+                  selectedCategory === category && styles.selectedCategoryTab,
                 ]}
                 onPress={() => setSelectedCategory(category)}
               >
                 <ThemedText
                   style={[
                     styles.categoryTabText,
-                    selectedCategory === category && styles.selectedCategoryTabText
+                    selectedCategory === category && styles.selectedCategoryTabText,
                   ]}
                 >
                   {category}
@@ -288,37 +405,18 @@ export default function ArtistProfileScreen() {
           </ScrollView>
         </View>
 
-        {/* Products Grid */}
-        <View style={styles.productsSection}>
-          <MasonryGrid
-            data={filteredProducts}
-            renderItem={({ item: product }) => (
-              <TouchableOpacity
-                key={product.id}
-                style={styles.productCard}
-                onPress={() => handleProductPress(product)}
-                activeOpacity={0.9}
-              >
-                <Image source={product.image} style={styles.productImage} />
-                <View style={styles.productInfo}>
-                  <ThemedText style={styles.productTitle} numberOfLines={2}>
-                    {product.title}
-                  </ThemedText>
-                  <ThemedText style={styles.productPrice}>{product.price}</ThemedText>
-                  {product.dimensions && (
-                    <ThemedText style={styles.productDimensions}>{product.dimensions}</ThemedText>
-                  )}
-                </View>
-              </TouchableOpacity>
-            )}
-            spacing={12}
-            columns={2}
-          />
-        </View>
-
-        {/* Bottom Padding */}
-        <View style={styles.bottomPadding} />
+        {/* Product Grid */}
+        {productsLoading ? (
+          <View style={styles.productsLoadingContainer}>
+            <ActivityIndicator size="large" color="#000" />
+            <ThemedText style={styles.productsLoadingText}>Loading products...</ThemedText>
+          </View>
+        ) : (
+          <EvenGrid data={gridData} onItemPress={handleGridItemPress} />
+        )}
       </ScrollView>
+        </>
+      )}
     </View>
   );
 }
@@ -328,8 +426,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  scrollView: {
+  loadingContainer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#666',
   },
   errorContainer: {
     flex: 1,
@@ -356,9 +461,24 @@ const styles = StyleSheet.create({
   heroSection: {
     position: 'relative',
   },
-  heroImage: {
+  heroCarousel: {
     width: '100%',
     height: '100%',
+  },
+  heroMediaContainer: {
+    width: screenWidth,
+    height: '100%',
+  },
+  heroMedia: {
+    width: '100%',
+    height: '100%',
+  },
+  heroPlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   heroOverlay: {
     position: 'absolute',
@@ -378,16 +498,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  artistNameContainer: {
+  muteButton: {
     position: 'absolute',
-    left: 80,
     right: 20,
-  },
-  artistName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
-    letterSpacing: 1,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   profilePictureContainer: {
     position: 'absolute',
@@ -401,18 +520,86 @@ const styles = StyleSheet.create({
     borderWidth: 4,
     borderColor: '#fff',
   },
+  profilePlaceholder: {
+    backgroundColor: '#ddd',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profileInitial: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#666',
+  },
+  dotContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  activeDot: {
+    backgroundColor: 'rgba(255, 255, 255, 1)',
+  },
+  merchantNameSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 35.2,
+    gap: 12,
+    marginBottom: 12,
+  },
+  merchantName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000',
+    fontFamily: 'Roboto',
+    letterSpacing: 0.5,
+  },
+  verifiedBadge: {
+    marginLeft: 4,
+  },
+  statsSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 40,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+  },
   actionsSection: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 40,
-    gap: 12,
+    paddingTop: 16,
+    gap: 10.56,
   },
   followButton: {
     backgroundColor: '#000',
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 24,
+    paddingHorizontal: 23.94,
+    paddingVertical: 8.98,
+    borderRadius: 17.95,
     flex: 1,
     alignItems: 'center',
   },
@@ -423,7 +610,7 @@ const styles = StyleSheet.create({
   },
   followButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 11.97,
     fontWeight: '600',
   },
   followingButtonText: {
@@ -431,40 +618,21 @@ const styles = StyleSheet.create({
   },
   contactButton: {
     backgroundColor: '#007AFF',
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 24,
+    paddingHorizontal: 23.94,
+    paddingVertical: 8.98,
+    borderRadius: 17.95,
     flex: 1,
     alignItems: 'center',
   },
   contactButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 11.97,
     fontWeight: '600',
-  },
-  statsSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#000',
-  },
-  statLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
   },
   bioSection: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingTop: 20,
+    paddingBottom: 11,
   },
   bioText: {
     fontSize: 16,
@@ -482,16 +650,17 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   categorySection: {
-    paddingVertical: 16,
+    paddingTop: 8.8,
+    paddingBottom: 16,
   },
   categoryScrollContainer: {
     paddingHorizontal: 20,
-    gap: 12,
+    gap: 7.8,
   },
   categoryTab: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 6,
+    paddingHorizontal: 15.6,
+    paddingVertical: 7.8,
+    borderRadius: 3.9,
     backgroundColor: '#f8f8f8',
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
@@ -501,7 +670,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#000',
   },
   categoryTabText: {
-    fontSize: 16,
+    fontSize: 10.4,
     fontWeight: '500',
     color: '#666',
   },
@@ -509,49 +678,109 @@ const styles = StyleSheet.create({
     color: '#000',
     fontWeight: '600',
   },
-  productsSection: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
+  productsLoadingContainer: {
+    paddingVertical: 20,
+    alignItems: 'center',
   },
-  productCard: {
+  productsLoadingText: {
+    marginTop: 8,
+    fontSize: 12,
+    color: '#999',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginBottom: 16,
+    borderRadius: 20,
+    width: '85%',
+    maxWidth: 400,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 8,
   },
-  productImage: {
-    width: '100%',
-    height: 200,
-    backgroundColor: '#f5f5f5',
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
-  productInfo: {
-    padding: 12,
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000',
   },
-  productTitle: {
-    fontSize: 14,
+  modalCloseButton: {
+    padding: 4,
+  },
+  modalOptions: {
+    paddingVertical: 8,
+  },
+  contactOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 16,
+  },
+  contactOptionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#f0f0f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contactOptionContent: {
+    flex: 1,
+  },
+  contactOptionTitle: {
+    fontSize: 16,
     fontWeight: '600',
     color: '#000',
     marginBottom: 4,
   },
-  productPrice: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#000',
-    marginBottom: 4,
-  },
-  productDimensions: {
-    fontSize: 12,
+  contactOptionSubtitle: {
+    fontSize: 14,
     color: '#666',
   },
-  bottomPadding: {
-    height: 100,
+  placeholderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  placeholderText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  placeholderSubtext: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
   },
 });

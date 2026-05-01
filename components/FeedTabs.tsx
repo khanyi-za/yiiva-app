@@ -1,17 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
+import { useFilter } from '@/contexts/FilterContext';
 
 interface FeedTabsProps {
-  onTabChange?: (tab: 'foryou' | 'following') => void;
+  onTabChange?: (tab: 'men' | 'women' | 'home-lifestyle') => void;
 }
 
 export function FeedTabs({ onTabChange }: FeedTabsProps) {
-  const [activeTab, setActiveTab] = useState<'foryou' | 'following'>('foryou');
+  const { activePrimaryFilter, setActivePrimaryFilter } = useFilter();
 
-  const handleTabPress = (tab: 'foryou' | 'following') => {
-    setActiveTab(tab);
+  const handleTabPress = (tab: 'men' | 'women' | 'home-lifestyle') => {
+    setActivePrimaryFilter(tab);
     onTabChange?.(tab);
   };
 
@@ -19,28 +20,41 @@ export function FeedTabs({ onTabChange }: FeedTabsProps) {
     <ThemedView style={styles.container}>
       <TouchableOpacity 
         style={styles.tab}
-        onPress={() => handleTabPress('foryou')}
+        onPress={() => handleTabPress('women')}
       >
         <ThemedText style={[
           styles.tabText, 
-          activeTab === 'foryou' && styles.activeTabText
+          activePrimaryFilter === 'women' && styles.activeTabText
         ]}>
-          For you
+          Women
         </ThemedText>
-        {activeTab === 'foryou' && <View style={styles.activeIndicator} />}
+        {activePrimaryFilter === 'women' && <View style={styles.activeIndicator} />}
       </TouchableOpacity>
       
       <TouchableOpacity 
         style={styles.tab}
-        onPress={() => handleTabPress('following')}
+        onPress={() => handleTabPress('men')}
       >
         <ThemedText style={[
           styles.tabText, 
-          activeTab === 'following' && styles.activeTabText
+          activePrimaryFilter === 'men' && styles.activeTabText
         ]}>
-          Following
+          Men
         </ThemedText>
-        {activeTab === 'following' && <View style={styles.activeIndicator} />}
+        {activePrimaryFilter === 'men' && <View style={styles.activeIndicator} />}
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        style={styles.tab}
+        onPress={() => handleTabPress('home-lifestyle')}
+      >
+        <ThemedText style={[
+          styles.tabText, 
+          activePrimaryFilter === 'home-lifestyle' && styles.activeTabText
+        ]}>
+          Home & Lifestyle
+        </ThemedText>
+        {activePrimaryFilter === 'home-lifestyle' && <View style={styles.activeIndicator} />}
       </TouchableOpacity>
     </ThemedView>
   );

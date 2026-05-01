@@ -8,15 +8,18 @@ import { IconSymbol } from './ui/IconSymbol';
 
 interface ProductCardProps {
   productImage: any;
-  profileImage: any;
+  profileImage?: any;
   artistName: string;
   productTitle: string;
   price: string;
-  timestamp: string;
-  location: string;
+  timestamp?: string;
+  location?: string;
+  productId?: string;
+  artistId?: string;
   onBookmark?: () => void;
   onLike?: () => void;
-  onMenuPress?: () => void;
+  isLiked?: boolean;
+  isBookmarked?: boolean;
 }
 
 export function ProductCard({
@@ -27,54 +30,62 @@ export function ProductCard({
   price,
   timestamp,
   location,
+  productId,
+  artistId,
   onBookmark,
   onLike,
-  onMenuPress,
+  isLiked = false,
+  isBookmarked = false,
 }: ProductCardProps) {
   const router = useRouter();
 
   const handleArtistPress = () => {
-    // Convert artist name to URL-friendly format
-    const artistId = artistName.toLowerCase().replace(/\s+/g, '-');
-    router.push(`/artist/${artistId}`);
+    // Use provided artistId or fallback to converting artist name
+    const id = artistId || artistName.toLowerCase().replace(/\s+/g, '-');
+    router.push(`/artist/${id}`);
+  };
+
+  const handleProductPress = () => {
+    if (productId) {
+      router.push(`/product/${productId}`);
+    }
   };
   return (
     <ThemedView style={styles.container}>
-      {/* Profile Header */}
-      <View style={styles.profileHeader}>
-        <TouchableOpacity style={styles.profileInfo} onPress={handleArtistPress} activeOpacity={0.7}>
-          <Image source={profileImage} style={styles.profileImage} />
-          <View style={styles.profileText}>
-            <View style={styles.nameTimeContainer}>
-              <ThemedText style={styles.artistName}>{artistName}</ThemedText>
-              <ThemedText style={styles.timestamp}> - {timestamp}</ThemedText>
-            </View>
-            <ThemedText style={styles.location}>{location}</ThemedText>
-          </View>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuButton} onPress={onMenuPress}>
-          <IconSymbol name="ellipsis" size={20} color="#666" />
-        </TouchableOpacity>
-      </View>
-      
       {/* Product Image */}
-      <View style={styles.imageContainer}>
+      <TouchableOpacity style={styles.imageContainer} onPress={handleProductPress} activeOpacity={0.9}>
         <Image source={productImage} style={styles.productImage} />
-      </View>
+      </TouchableOpacity>
       
       {/* Product Info Footer */}
       <View style={styles.productFooter}>
         <View style={styles.productInfo}>
           <ThemedText style={styles.productTitle}>{productTitle}</ThemedText>
+          <View style={styles.artistRow}>
+            <TouchableOpacity onPress={handleArtistPress} activeOpacity={0.7} style={styles.artistNameContainer}>
+              <ThemedText style={styles.artistName}>
+                <ThemedText style={styles.byText}>By </ThemedText>
+                {artistName}
+              </ThemedText>
+            </TouchableOpacity>
+            <View style={styles.actionButtons}>
+              <TouchableOpacity style={styles.actionButton} onPress={onBookmark}>
+                <IconSymbol
+                  name={isBookmarked ? "bookmark.fill" : "bookmark"}
+                  size={24}
+                  color="#000"
+                />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionButton} onPress={onLike}>
+                <IconSymbol
+                  name={isLiked ? "heart.fill" : "heart"}
+                  size={24}
+                  color={isLiked ? "#ff0000" : "#000"}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
           <ThemedText style={styles.price}>{price}</ThemedText>
-        </View>
-        <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.actionButton} onPress={onBookmark}>
-            <IconSymbol name="bookmark" size={20} color="#000" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={onLike}>
-            <IconSymbol name="heart" size={20} color="#000" />
-          </TouchableOpacity>
         </View>
       </View>
     </ThemedView>
@@ -84,69 +95,42 @@ export function ProductCard({
 const styles = StyleSheet.create({
   container: {
     marginBottom: 20,
-    backgroundColor: 'transparent',
-  },
-  profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 3.6,
-    paddingLeft: 4,
-    paddingRight: 16,
-  },
-  profileInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  profileImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f0f0f0',
-  },
-  profileText: {
-    flex: 1,
-  },
-  nameTimeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    backgroundColor: '#fff',
+    width: '97%',
+    alignSelf: 'center',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    overflow: 'hidden',
   },
   artistName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
-  },
-  timestamp: {
-    fontSize: 14,
-    color: '#999',
-  },
-  location: {
     fontSize: 12,
+    fontWeight: '500',
     color: '#666',
-    marginTop: -2,
-    lineHeight: 14,
   },
-  menuButton: {
-    padding: 8,
-    marginRight: 12,
+  byText: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: '#666',
+    fontStyle: 'italic',
   },
   imageContainer: {
-    marginLeft: -20,
-    marginRight: -20,
-    marginVertical: 2.4,
+    marginBottom: 3.6,
   },
   productImage: {
     width: '100%',
-    height: 352,
+    height: 370,
     backgroundColor: '#f0f0f0',
   },
   productFooter: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-    paddingHorizontal: 4,
+    paddingVertical: 2.4,
+    paddingHorizontal: 12,
   },
   productInfo: {
     flex: 1,
@@ -155,12 +139,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#000',
-    marginBottom: 4,
+    marginBottom: -4,
+    lineHeight: 18,
+    fontFamily: 'RobotoMono',
   },
   price: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
     color: '#000',
+    marginTop: -4,
+    lineHeight: 18,
+    fontFamily: 'Didot',
+  },
+  artistRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: -4,
+  },
+  artistNameContainer: {
+    flex: 1,
   },
   actionButtons: {
     flexDirection: 'row',

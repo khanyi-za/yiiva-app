@@ -1,148 +1,72 @@
 import { CategoryFilter } from '@/components/CategoryFilter';
-import { MasonryGrid } from '@/components/MasonryGrid';
+import { EvenGrid } from '@/components/EvenGrid';
 import { ProductCard } from '@/components/ProductCard';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { SideMenu } from '@/components/SideMenu';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
-
-interface SearchResult {
-  id: string;
-  productImage: any;
-  profileImage: any;
-  artistName: string;
-  productTitle: string;
-  price: string;
-  timestamp: string;
-  location: string;
-}
-
-interface MasonryItem {
-  id: string;
-  image: any;
-  brand?: string;
-  title: string;
-  price: string;
-  height?: number;
-}
-
-const sampleSearchData: SearchResult[] = [
-  {
-    id: '1',
-    productImage: require('@/assets/images/masonwabe_jersey.png'),
-    profileImage: require('@/assets/images/ masonwabe_profile_pic.png'),
-    artistName: 'Masonwabe Ntloko',
-    productTitle: 'Rectangular Rug',
-    price: 'R3500.67',
-    timestamp: '3days',
-    location: 'Johannesburg',
-  },
-  {
-    id: '2',
-    productImage: require('@/assets/images/jersey_below.png'),
-    profileImage: require('@/assets/images/ masonwabe_profile_pic.png'),
-    artistName: 'Mason Mount',
-    productTitle: 'Urban Collection',
-    price: 'R2750.00',
-    timestamp: '5days',
-    location: 'Cape Town',
-  },
-  {
-    id: '3',
-    productImage: require('@/assets/images/masonwabe_jersey.png'),
-    profileImage: require('@/assets/images/ masonwabe_profile_pic.png'),
-    artistName: 'Artist Name',
-    productTitle: 'Test Product',
-    price: 'R1200.00',
-    timestamp: '1day',
-    location: 'Durban',
-  },
-];
-
-const sampleMasonryData: MasonryItem[] = [
-  {
-    id: '1',
-    image: require('@/assets/images/masonwabe_jersey.png'),
-    brand: 'PacSun',
-    title: 'Levi\'s Womens Abraided...',
-    price: '$79.50',
-    height: 280,
-  },
-  {
-    id: '2',
-    image: require('@/assets/images/jersey_below.png'),
-    brand: 'American Eagle',
-    title: 'AE Strigid Curvy Super Hi...',
-    price: '$37.46',
-    height: 320,
-  },
-  {
-    id: '3',
-    image: require('@/assets/images/masonwabe_jersey.png'),
-    brand: 'Buckle',
-    title: 'Urban Style Collection',
-    price: '$65.00',
-    height: 240,
-  },
-  {
-    id: '4',
-    image: require('@/assets/images/jersey_below.png'),
-    brand: 'H&M',
-    title: 'Modern Fit Jeans',
-    price: '$29.99',
-    height: 260,
-  },
-  {
-    id: '5',
-    image: require('@/assets/images/masonwabe_jersey.png'),
-    brand: 'Zara',
-    title: 'Premium Denim Collection',
-    price: '$89.95',
-    height: 300,
-  },
-  {
-    id: '6',
-    image: require('@/assets/images/jersey_below.png'),
-    brand: 'Forever 21',
-    title: 'Casual Weekend Wear',
-    price: '$24.90',
-    height: 220,
-  },
-];
+import React, { useState, useEffect } from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
+  StatusBar,
+  ActivityIndicator,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
+import { useSocialStore } from '@/lib/social-store';
+import { api } from '@/lib/api-client';
+import { getLocalAsset } from '@/lib/local-assets';
+import { useQuery } from '@tanstack/react-query';
 
 export default function SearchScreen() {
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([
     'Abstract Art',
     'Handmade Rugs',
     'Urban Style',
     'Local Artists',
   ]);
-  const [isSearching, setIsSearching] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [hasBeenInteracted, setHasBeenInteracted] = useState(false);
+  const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<string>('All');
+
+  const { toggleLike, toggleBookmark, isLiked, isBookmarked } = useSocialStore();
+
+  const isSearching = searchQuery.trim().length > 0;
+
+  // Search API call - only executes when user is actively searching
+  const {
+    data: searchData,
+    isLoading: searchLoading,
+    error: searchError,
+  } = useQuery({
+    queryKey: ['search', searchQuery],
+    queryFn: () => api.searchProducts({ query: searchQuery, limit: 20, offset: 0 }),
+    enabled: isSearching, // Only run query when there's a search term
+    staleTime: 2 * 60 * 1000, // Cache for 2 minutes
+  });
+
+  const searchResults = searchData?.products || [];
+  const totalResults = searchData?.pagination?.total || 0;
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    if (query.trim().length > 0) {
-      setIsSearching(true);
-      // Simulate search - filter sample data
-      const filtered = sampleSearchData.filter(item =>
-        item.productTitle.toLowerCase().includes(query.toLowerCase()) ||
-        item.artistName.toLowerCase().includes(query.toLowerCase()) ||
-        item.location.toLowerCase().includes(query.toLowerCase())
-      );
-      setSearchResults(filtered);
-    } else {
-      setIsSearching(false);
-      setSearchResults([]);
+    if (query.trim().length > 0 && !recentSearches.includes(query.trim())) {
+      setRecentSearches([query.trim(), ...recentSearches.slice(0, 4)]);
     }
   };
 
   const handleRecentSearchPress = (searchTerm: string) => {
     setSearchQuery(searchTerm);
-    handleSearch(searchTerm);
+    setHasBeenInteracted(true);
   };
 
   const clearRecentSearch = (index: number) => {
@@ -151,20 +75,15 @@ export default function SearchScreen() {
   };
 
   const handleCategoryChange = (category: string) => {
-    console.log('Category filter:', category);
-    // Implement category filtering logic
+    setActiveCategory(category);
   };
 
-  const handleBookmark = () => {
-    console.log('Bookmarked');
+  const handleBookmark = (productId: string) => {
+    toggleBookmark(productId);
   };
 
-  const handleLike = () => {
-    console.log('Liked');
-  };
-
-  const handleProductMenuPress = () => {
-    console.log('Product menu pressed');
+  const handleLike = (productId: string) => {
+    toggleLike(productId);
   };
 
   const handleSearchFocus = () => {
@@ -177,15 +96,50 @@ export default function SearchScreen() {
     }
   };
 
-  const handleMasonryItemPress = (item: MasonryItem) => {
-    console.log('Masonry item pressed:', item.title);
+  const handleBackToGrid = () => {
+    setIsSearchFocused(false);
+    setSearchQuery('');
+    setHasBeenInteracted(true);
   };
 
+  const handleGridItemPress = (item: any) => {
+    router.push(`/product/${item.id}`);
+  };
+
+  const handleLoadMoreSearch = () => {
+    // TODO: Implement REST API pagination
+  };
+
+  // Reset search state when user navigates to search tab
+  useFocusEffect(
+    React.useCallback(() => {
+      setIsSearchFocused(false);
+      setSearchQuery('');
+
+      return () => {
+        setHasBeenInteracted(false);
+      };
+    }, [])
+  );
 
   return (
     <ThemedView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <SideMenu
+        visible={isMenuVisible}
+        onClose={() => setIsMenuVisible(false)}
+        userName="Khanyisomthamo2"
+      />
       {/* Search Header */}
-      <View style={styles.searchHeader}>
+      <View style={[styles.searchHeader, { paddingTop: insets.top + 16 }]}>
+        <TouchableOpacity onPress={() => setIsMenuVisible(true)} style={styles.menuButton}>
+          <View style={styles.menuIcon}>
+            <View style={styles.menuLine} />
+            <View style={styles.menuLine} />
+            <View style={styles.menuLine} />
+          </View>
+        </TouchableOpacity>
+
         <View style={styles.searchInputContainer}>
           <IconSymbol name="magnifyingglass" size={20} color="#666" style={styles.searchIcon} />
           <TextInput
@@ -197,13 +151,12 @@ export default function SearchScreen() {
             onFocus={handleSearchFocus}
             onBlur={handleSearchBlur}
             autoCapitalize="none"
+            autoCorrect={false}
+            spellCheck={false}
             returnKeyType="search"
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity
-              onPress={() => handleSearch('')}
-              style={styles.clearButton}
-            >
+            <TouchableOpacity onPress={() => handleSearch('')} style={styles.clearButton}>
               <IconSymbol name="xmark.circle.fill" size={20} color="#999" />
             </TouchableOpacity>
           )}
@@ -212,12 +165,12 @@ export default function SearchScreen() {
 
       {/* Category Filter */}
       {!isSearchFocused && !isSearching && (
-        <CategoryFilter onCategoryChange={handleCategoryChange} />
+        <CategoryFilter onCategoryChange={handleCategoryChange} searchMode={true} />
       )}
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {isSearchFocused && !isSearching && (
-          /* Recent Searches & Suggestions */
+      {isSearchFocused && !isSearching && (
+        /* Recent Searches & Suggestions */
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <View style={styles.content}>
             {recentSearches.length > 0 && (
               <View style={styles.section}>
@@ -244,7 +197,13 @@ export default function SearchScreen() {
             <View style={styles.section}>
               <ThemedText style={styles.sectionTitle}>Trending</ThemedText>
               <View style={styles.trendingTags}>
-                {['#HandmadeArt', '#LocalArtists', '#VintageRugs', '#ModernDesign', '#SouthAfricanArt'].map((tag) => (
+                {[
+                  '#HandmadeArt',
+                  '#LocalArtists',
+                  '#VintageRugs',
+                  '#ModernDesign',
+                  '#SouthAfricanArt',
+                ].map((tag) => (
                   <TouchableOpacity
                     key={tag}
                     style={styles.trendingTag}
@@ -256,57 +215,144 @@ export default function SearchScreen() {
               </View>
             </View>
           </View>
-        )}
-        
-        {isSearching && (
-          /* Search Results */
+
+          {/* Tappable white space to go back to grid */}
+          <TouchableOpacity
+            style={styles.backToGridArea}
+            onPress={handleBackToGrid}
+            activeOpacity={1}
+          />
+        </ScrollView>
+      )}
+
+      {isSearching && (
+        /* Search Results */
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          onScroll={({ nativeEvent }) => {
+            const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+            const isCloseToBottom =
+              layoutMeasurement.height + contentOffset.y >= contentSize.height - 500;
+            if (isCloseToBottom) {
+              handleLoadMoreSearch();
+            }
+          }}
+          scrollEventThrottle={400}
+        >
           <View style={styles.resultsContainer}>
-            <ThemedText style={styles.resultsHeader}>
-              {searchResults.length} results for "{searchQuery}"
-            </ThemedText>
-            
-            {searchResults.length > 0 && (
-              <View style={styles.results}>
-                {searchResults.map((item) => (
-                  <ProductCard
-                    key={item.id}
-                    productImage={item.productImage}
-                    profileImage={item.profileImage}
-                    artistName={item.artistName}
-                    productTitle={item.productTitle}
-                    price={item.price}
-                    timestamp={item.timestamp}
-                    location={item.location}
-                    onBookmark={handleBookmark}
-                    onLike={handleLike}
-                    onMenuPress={handleProductMenuPress}
-                  />
-                ))}
+            {searchLoading && searchResults.length === 0 ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#000" />
+                <ThemedText style={styles.loadingText}>Searching...</ThemedText>
               </View>
-            )}
-            
-            {searchResults.length === 0 && (
-              <View style={styles.noResults}>
-                <IconSymbol name="magnifyingglass" size={48} color="#ccc" />
-                <ThemedText style={styles.noResultsTitle}>No results found</ThemedText>
-                <ThemedText style={styles.noResultsText}>
-                  Try adjusting your search or browse by category
+            ) : (
+              <>
+                <ThemedText style={styles.resultsHeader}>
+                  {totalResults} result{totalResults !== 1 ? 's' : ''} for "{searchQuery}"
                 </ThemedText>
-              </View>
+
+                {searchError && (
+                  <View style={styles.errorContainer}>
+                    <ThemedText style={styles.errorText}>
+                      Error searching. Please try again.
+                    </ThemedText>
+                  </View>
+                )}
+
+                {searchResults.length > 0 && (
+                  <View style={styles.results}>
+                    {(() => {
+                      const content = [];
+                      for (let i = 0; i < searchResults.length; i += 2) {
+                        const rowProducts = [];
+
+                        // First product in row
+                        const product1 = searchResults[i];
+                        const productImage1 = getLocalAsset(product1.primaryImage);
+                        const merchantLogo1 = product1.merchant.logo ? getLocalAsset(product1.merchant.logo) : undefined;
+
+                        rowProducts.push(
+                          <View key={product1.id} style={styles.gridItem}>
+                            <ProductCard
+                              productImage={productImage1 || { uri: product1.primaryImage }}
+                              profileImage={merchantLogo1}
+                              artistName={product1.merchant.displayName}
+                              productTitle={product1.name}
+                              price={`R${product1.price.toFixed(2)}`}
+                              location={product1.merchant.username}
+                              productId={product1.id}
+                              artistId={product1.merchant.username}
+                              onBookmark={() => handleBookmark(product1.id)}
+                              onLike={() => handleLike(product1.id)}
+                              isLiked={isLiked(product1.id)}
+                              isBookmarked={isBookmarked(product1.id)}
+                            />
+                          </View>
+                        );
+
+                        // Second product in row (if exists)
+                        if (i + 1 < searchResults.length) {
+                          const product2 = searchResults[i + 1];
+                          const productImage2 = getLocalAsset(product2.primaryImage);
+                          const merchantLogo2 = product2.merchant.logo ? getLocalAsset(product2.merchant.logo) : undefined;
+
+                          rowProducts.push(
+                            <View key={product2.id} style={styles.gridItem}>
+                              <ProductCard
+                                productImage={productImage2 || { uri: product2.primaryImage }}
+                                profileImage={merchantLogo2}
+                                artistName={product2.merchant.displayName}
+                                productTitle={product2.name}
+                                price={`R${product2.price.toFixed(2)}`}
+                                location={product2.merchant.username}
+                                productId={product2.id}
+                                artistId={product2.merchant.username}
+                                onBookmark={() => handleBookmark(product2.id)}
+                                onLike={() => handleLike(product2.id)}
+                                isLiked={isLiked(product2.id)}
+                                isBookmarked={isBookmarked(product2.id)}
+                              />
+                            </View>
+                          );
+                        }
+
+                        content.push(
+                          <View key={`row-${i}`} style={styles.gridRow}>
+                            {rowProducts}
+                          </View>
+                        );
+                      }
+                      return content;
+                    })()}
+                  </View>
+                )}
+
+                {searchResults.length === 0 && !searchLoading && !searchError && (
+                  <View style={styles.noResults}>
+                    <IconSymbol name="magnifyingglass" size={48} color="#ccc" />
+                    <ThemedText style={styles.noResultsTitle}>No results found</ThemedText>
+                    <ThemedText style={styles.noResultsText}>
+                      Try adjusting your search or browse by category
+                    </ThemedText>
+                  </View>
+                )}
+              </>
             )}
           </View>
-        )}
-        
-        {!isSearchFocused && !isSearching && (
-          /* Default Masonry Grid */
-          <View style={styles.masonryContainer}>
-            <MasonryGrid
-              data={sampleMasonryData}
-              onItemPress={handleMasonryItemPress}
-            />
-          </View>
-        )}
-      </ScrollView>
+        </ScrollView>
+      )}
+
+      {!isSearchFocused && !isSearching && (
+        /* Default placeholder when not searching */
+        <View style={styles.placeholderContainer}>
+          <IconSymbol name="magnifyingglass" size={64} color="#ccc" />
+          <ThemedText style={styles.placeholderTitle}>Search for products</ThemedText>
+          <ThemedText style={styles.placeholderText}>
+            Search by product name, category, or brand name
+          </ThemedText>
+        </View>
+      )}
     </ThemedView>
   );
 }
@@ -317,14 +363,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   searchHeader: {
-    paddingTop: 60,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 16,
     paddingHorizontal: 20,
     paddingBottom: 16,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    gap: 12,
+  },
+  menuButton: {
+    padding: 8,
+  },
+  menuIcon: {
+    gap: 3,
+  },
+  menuLine: {
+    width: 20,
+    height: 2,
+    backgroundColor: '#333',
+    borderRadius: 1,
   },
   searchInputContainer: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f5f5f5',
@@ -393,7 +455,6 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   resultsContainer: {
-    paddingHorizontal: 20,
     paddingTop: 16,
   },
   resultsHeader: {
@@ -401,9 +462,48 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#666',
     marginBottom: 20,
+    paddingHorizontal: 20,
   },
   results: {
     paddingBottom: 100,
+  },
+  gridRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    gap: 12,
+    marginBottom: 12,
+  },
+  gridItem: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#666',
+  },
+  loadMoreContainer: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  loadMoreText: {
+    marginTop: 8,
+    fontSize: 12,
+    color: '#999',
+  },
+  errorContainer: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#ff0000',
+    textAlign: 'center',
   },
   noResults: {
     alignItems: 'center',
@@ -423,8 +523,33 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-  masonryContainer: {
-    paddingTop: 16,
-    paddingBottom: 100,
+  gridContainer: {
+    flex: 1,
+  },
+  backToGridArea: {
+    flex: 1,
+    minHeight: 200,
+    backgroundColor: 'transparent',
+  },
+  placeholderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    paddingTop: 100,
+  },
+  placeholderTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 24,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  placeholderText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

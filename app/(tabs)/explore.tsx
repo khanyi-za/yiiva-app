@@ -1,265 +1,415 @@
 import { CategoryFilter } from '@/components/CategoryFilter';
+import { FeedTabs } from '@/components/FeedTabs';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { VideoCard } from '@/components/VideoCard';
 import { YiivaHeader } from '@/components/YiivaHeader';
+import { SideMenu } from '@/components/SideMenu';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useFilter } from '@/contexts/FilterContext';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import {
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  StatusBar,
+  ActivityIndicator,
+} from 'react-native';
+import { useSocialStore } from '@/lib/social-store';
+import { getLocalAsset } from '@/lib/local-assets';
 
-interface FeaturedCollection {
+// TypeScript interfaces for explore screen data
+interface Collection {
   id: string;
-  title: string;
-  subtitle: string;
-  image: any;
+  name: string;
+  description?: string;
+  coverImage: { url: string };
   itemCount: number;
 }
 
-interface TrendingArtist {
+interface Merchant {
+  id: string;
+  username: string;
+  displayName: string;
+  logo?: { url: string };
+  stats: {
+    followers: number;
+  };
+}
+
+interface Product {
   id: string;
   name: string;
-  image: any;
-  followers: string;
-  isFollowing: boolean;
+  primaryImage: { url: string };
+  price: { formatted: string };
+  merchant: {
+    displayName: string;
+    logo?: { url: string };
+  };
+  socialStats?: {
+    likes: number;
+  };
 }
-
-interface VideoItem {
-  id: string;
-  videoThumbnail: any;
-  artistImage: any;
-  artistName: string;
-  videoTitle: string;
-  likes: string;
-  isLiked: boolean;
-}
-
-const featuredCollections: FeaturedCollection[] = [
-  {
-    id: '1',
-    title: 'South African Heritage',
-    subtitle: 'Traditional crafts & modern art',
-    image: require('@/assets/images/masonwabe_jersey.png'),
-    itemCount: 127,
-  },
-  {
-    id: '2',
-    title: 'Urban Street Style',
-    subtitle: 'Contemporary fashion pieces',
-    image: require('@/assets/images/jersey_below.png'),
-    itemCount: 89,
-  },
-];
-
-const trendingArtists: TrendingArtist[] = [
-  {
-    id: '1',
-    name: 'Masonwabe Ntloko',
-    image: require('@/assets/images/ masonwabe_profile_pic.png'),
-    followers: '12.4K',
-    isFollowing: false,
-  },
-  {
-    id: '2',
-    name: 'Thabo Designs',
-    image: require('@/assets/images/ masonwabe_profile_pic.png'),
-    followers: '8.9K',
-    isFollowing: true,
-  },
-  {
-    id: '3',
-    name: 'Nomsa Crafts',
-    image: require('@/assets/images/ masonwabe_profile_pic.png'),
-    followers: '15.2K',
-    isFollowing: false,
-  },
-];
-
-const curatedVideos: VideoItem[] = [
-  {
-    id: '1',
-    videoThumbnail: require('@/assets/images/masonwabe_jersey.png'),
-    artistImage: require('@/assets/images/ masonwabe_profile_pic.png'),
-    artistName: 'Masonwabe Ntloko',
-    videoTitle: 'Creating traditional beadwork patterns - Behind the scenes',
-    likes: '12.4K',
-    isLiked: false,
-  },
-  {
-    id: '2',
-    videoThumbnail: require('@/assets/images/jersey_below.png'),
-    artistImage: require('@/assets/images/ masonwabe_profile_pic.png'),
-    artistName: 'Thabo Designs',
-    videoTitle: 'Street art meets fashion - My creative process',
-    likes: '8.9K',
-    isLiked: true,
-  },
-  {
-    id: '3',
-    videoThumbnail: require('@/assets/images/masonwabe_jersey.png'),
-    artistImage: require('@/assets/images/ masonwabe_profile_pic.png'),
-    artistName: 'Nomsa Crafts',
-    videoTitle: 'Hand-weaving techniques passed down generations',
-    likes: '15.2K',
-    isLiked: false,
-  },
-];
 
 export default function ExploreScreen() {
-  const [followingArtists, setFollowingArtists] = useState<Set<string>>(new Set(['2']));
+  const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const { activePrimaryFilter } = useFilter();
   const router = useRouter();
 
+  const { toggleFollow, isFollowing } = useSocialStore();
+
+  // TODO: Replace with REST API calls
+  // Static mock data for now
+  const collections: Collection[] = [
+    {
+      id: '1',
+      name: 'Heritage Collection',
+      description: 'Traditional meets contemporary',
+      coverImage: { url: '/demo-assets/tol_thema/The_Bonang_dress_1.png' },
+      itemCount: 12,
+    },
+    {
+      id: '2',
+      name: 'Summer Essentials',
+      description: 'Light & breezy styles',
+      coverImage: { url: '/demo-assets/tol_thema/The_Khosi_Shirt.png' },
+      itemCount: 8,
+    },
+    {
+      id: '3',
+      name: 'Urban Streetwear',
+      description: 'Fresh street styles',
+      coverImage: { url: '/demo-assets/suhu/Suhu_Eye_Knitted_Golfer.png' },
+      itemCount: 15,
+    },
+  ];
+
+  const merchants: Merchant[] = [
+    {
+      id: 'merchant-1',
+      username: 'tol_thema',
+      displayName: "Tol'thema",
+      logo: { url: "/demo-assets/tol_thema/tol'thema-logo.png" },
+      stats: { followers: 17201 },
+    },
+    {
+      id: 'merchant-2',
+      username: 'suhu',
+      displayName: 'SUHU',
+      logo: { url: '/demo-assets/suhu/suhu-logo.png' },
+      stats: { followers: 9155 },
+    },
+  ];
+
+  const trendingProducts: Product[] = [
+    {
+      id: 'prod-1',
+      name: 'The Bonang Dress',
+      primaryImage: { url: '/demo-assets/tol_thema/The_Bonang_dress_1.png' },
+      price: { formatted: 'R 1,899' },
+      merchant: {
+        displayName: "Tol'thema",
+        logo: { url: "/demo-assets/tol_thema/tol'thema-logo.png" },
+      },
+      socialStats: { likes: 234 },
+    },
+    {
+      id: 'prod-2',
+      name: 'Suhu Eye Knitted Golfer',
+      primaryImage: { url: '/demo-assets/suhu/Suhu_Eye_Knitted_Golfer.png' },
+      price: { formatted: 'R 1,200' },
+      merchant: {
+        displayName: 'SUHU',
+        logo: { url: '/demo-assets/suhu/suhu-logo.png' },
+      },
+      socialStats: { likes: 1200 },
+    },
+    {
+      id: 'prod-3',
+      name: 'The Khosi Shirt',
+      primaryImage: { url: '/demo-assets/tol_thema/The_Khosi_Shirt.png' },
+      price: { formatted: 'R 950' },
+      merchant: {
+        displayName: "Tol'thema",
+        logo: { url: "/demo-assets/tol_thema/tol'thema-logo.png" },
+      },
+      socialStats: { likes: 456 },
+    },
+    {
+      id: 'prod-4',
+      name: 'Plain Round Neck Lindy',
+      primaryImage: { url: '/demo-assets/tol_thema/Lindy_2.png' },
+      price: { formatted: 'R 750' },
+      merchant: {
+        displayName: "Tol'thema",
+        logo: { url: "/demo-assets/tol_thema/tol'thema-logo.png" },
+      },
+      socialStats: { likes: 189 },
+    },
+  ];
+
+  const collectionsLoading = false;
+  const collectionsError = null;
+  const merchantsLoading = false;
+  const merchantsError = null;
+  const trendingLoading = false;
+  const trendingError = null;
+
   const handleMenuPress = () => {
-    console.log('Menu pressed');
+    setIsMenuVisible(true);
   };
 
   const handleCartPress = () => {
-    console.log('Cart pressed');
+    router.push('/cart');
+  };
+
+  const handleNotificationsPress = () => {
+    console.log('Notifications pressed');
+  };
+
+  const handleFeedTabChange = (tab: 'men' | 'women' | 'home-lifestyle') => {
+    console.log('Feed tab changed to:', tab);
   };
 
   const handleCategoryChange = (category: string) => {
     console.log('Category changed to:', category);
   };
 
-  const handleCollectionPress = (collection: FeaturedCollection) => {
-    console.log('Collection pressed:', collection.title);
+  const handleCollectionPress = (collection: Collection) => {
+    console.log('Collection pressed:', collection.name);
+    // TODO: Navigate to collection screen
   };
 
-  const handleArtistPress = (artist: TrendingArtist) => {
-    console.log('Artist pressed:', artist.name);
+  const handleArtistPress = (merchant: Merchant) => {
+    router.push(`/artist/${merchant.username}`);
   };
 
-  const handleFollowPress = (artistId: string) => {
-    setFollowingArtists(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(artistId)) {
-        newSet.delete(artistId);
-      } else {
-        newSet.add(artistId);
-      }
-      return newSet;
-    });
+  const handleFollowPress = (merchantId: string) => {
+    toggleFollow(merchantId);
   };
 
-  const handleVideoPlay = (videoId: string) => {
-    router.push({
-      pathname: '/video-player',
-      params: { videoId }
-    });
+  const handleProductPress = (productId: string) => {
+    router.push(`/product/${productId}`);
   };
 
-  const handleVideoLike = (videoId: string) => {
-    console.log('Video liked:', videoId);
+  const handleVideoLike = (productId: string) => {
+    console.log('Product liked:', productId);
   };
 
-  const handleVideoArtistPress = (artistName: string) => {
-    console.log('Video artist pressed:', artistName);
+  const handleVideoArtistPress = (username: string) => {
+    router.push(`/artist/${username}`);
   };
 
   return (
     <ThemedView style={styles.container}>
-      <YiivaHeader 
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <SideMenu
+        visible={isMenuVisible}
+        onClose={() => setIsMenuVisible(false)}
+        userName="Khanyisomthamo2"
+      />
+      <YiivaHeader
         onMenuPress={handleMenuPress}
         onCartPress={handleCartPress}
+        onNotificationsPress={handleNotificationsPress}
       />
-      
+
+      <FeedTabs onTabChange={handleFeedTabChange} />
+
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Featured Collections */}
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <ThemedText style={styles.sectionTitle}>Featured Collections</ThemedText>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            style={styles.horizontalScroll}
-            contentContainerStyle={styles.collectionsContainer}
-          >
-            {featuredCollections.map((collection) => (
-              <TouchableOpacity
-                key={collection.id}
-                style={styles.collectionCard}
-                onPress={() => handleCollectionPress(collection)}
-                activeOpacity={0.9}
-              >
-                <Image source={collection.image} style={styles.collectionImage} />
-                <View style={styles.collectionOverlay}>
-                  <View style={styles.collectionContent}>
-                    <ThemedText style={styles.collectionTitle}>{collection.title}</ThemedText>
-                    <ThemedText style={styles.collectionSubtitle}>{collection.subtitle}</ThemedText>
-                    <ThemedText style={styles.collectionCount}>{collection.itemCount} items</ThemedText>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
 
-        {/* Trending Artists */}
+          {collectionsLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#000" />
+            </View>
+          ) : collectionsError ? (
+            <View style={styles.errorContainer}>
+              <ThemedText style={styles.errorText}>Error loading collections</ThemedText>
+            </View>
+          ) : collections.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.horizontalScroll}
+              contentContainerStyle={styles.collectionsContainer}
+            >
+              {collections.map((collection: Collection) => (
+                <TouchableOpacity
+                  key={collection.id}
+                  style={styles.collectionCard}
+                  onPress={() => handleCollectionPress(collection)}
+                  activeOpacity={0.9}
+                >
+                  <Image
+                    source={getLocalAsset(collection.coverImage.url)}
+                    style={styles.collectionImage}
+                  />
+                  <View style={styles.collectionOverlay}>
+                    <View style={styles.collectionContent}>
+                      <ThemedText style={styles.collectionTitle}>{collection.name}</ThemedText>
+                      {collection.description && (
+                        <ThemedText style={styles.collectionSubtitle}>
+                          {collection.description}
+                        </ThemedText>
+                      )}
+                      <ThemedText style={styles.collectionCount}>
+                        {collection.itemCount} items
+                      </ThemedText>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <ThemedText style={styles.emptyText}>No collections available</ThemedText>
+            </View>
+          )}
+        </View> */}
+
+        {/* Trending Brands */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <ThemedText style={styles.sectionTitle}>Trending Artists</ThemedText>
+            <ThemedText style={styles.sectionTitle}>Trending Brands</ThemedText>
             <TouchableOpacity>
               <ThemedText style={styles.seeAllText}>See All</ThemedText>
             </TouchableOpacity>
           </View>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            style={styles.horizontalScroll}
-            contentContainerStyle={styles.artistsContainer}
-          >
-            {trendingArtists.map((artist) => (
-              <TouchableOpacity
-                key={artist.id}
-                style={styles.artistCard}
-                onPress={() => handleArtistPress(artist)}
-                activeOpacity={0.9}
-              >
-                <Image source={artist.image} style={styles.artistImage} />
-                <ThemedText style={styles.artistName} numberOfLines={1}>{artist.name}</ThemedText>
-                <ThemedText style={styles.artistFollowers}>{artist.followers} followers</ThemedText>
+
+          {merchantsLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#000" />
+            </View>
+          ) : merchantsError ? (
+            <View style={styles.errorContainer}>
+              <ThemedText style={styles.errorText}>Error loading artists</ThemedText>
+            </View>
+          ) : merchants.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.horizontalScroll}
+              contentContainerStyle={styles.artistsContainer}
+            >
+              {merchants.map((merchant: Merchant) => (
                 <TouchableOpacity
-                  style={[
-                    styles.followButton,
-                    followingArtists.has(artist.id) && styles.followingButton
-                  ]}
-                  onPress={() => handleFollowPress(artist.id)}
+                  key={merchant.id}
+                  style={styles.artistCard}
+                  onPress={() => handleArtistPress(merchant)}
+                  activeOpacity={0.9}
                 >
-                  <ThemedText style={[
-                    styles.followButtonText,
-                    followingArtists.has(artist.id) && styles.followingButtonText
-                  ]}>
-                    {followingArtists.has(artist.id) ? 'Following' : 'Follow'}
+                  {merchant.logo ? (
+                    <Image source={getLocalAsset(merchant.logo.url)} style={styles.artistImage} />
+                  ) : (
+                    <View style={[styles.artistImage, styles.artistPlaceholder]}>
+                      <ThemedText style={styles.artistInitial}>
+                        {merchant.displayName.charAt(0).toUpperCase()}
+                      </ThemedText>
+                    </View>
+                  )}
+                  <ThemedText style={styles.artistName} numberOfLines={1}>
+                    {merchant.displayName}
                   </ThemedText>
+                  <TouchableOpacity
+                    style={[
+                      styles.followButton,
+                      isFollowing(merchant.id) && styles.followingButton,
+                    ]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleFollowPress(merchant.id);
+                    }}
+                  >
+                    <ThemedText
+                      style={[
+                        styles.followButtonText,
+                        isFollowing(merchant.id) && styles.followingButtonText,
+                      ]}
+                    >
+                      {isFollowing(merchant.id) ? 'Following' : 'Follow'}
+                    </ThemedText>
+                  </TouchableOpacity>
                 </TouchableOpacity>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <ThemedText style={styles.emptyText}>No artists available</ThemedText>
+            </View>
+          )}
         </View>
 
         {/* Category Filter */}
-        <CategoryFilter onCategoryChange={handleCategoryChange} />
+        <CategoryFilter onCategoryChange={handleCategoryChange} primaryFilter={activePrimaryFilter} />
 
-        {/* Curated Videos */}
+        {/* Curated Products */}
         <View style={styles.section}>
-          <ThemedText style={styles.sectionTitle}>Curated for You</ThemedText>
-          <View style={styles.videosContainer}>
-            {curatedVideos.map((video) => (
-              <VideoCard
-                key={video.id}
-                id={video.id}
-                videoThumbnail={video.videoThumbnail}
-                artistImage={video.artistImage}
-                artistName={video.artistName}
-                videoTitle={video.videoTitle}
-                likes={video.likes}
-                isLiked={video.isLiked}
-                onPlay={() => handleVideoPlay(video.id)}
-                onLike={() => handleVideoLike(video.id)}
-                onArtistPress={() => handleVideoArtistPress(video.artistName)}
-              />
-            ))}
-          </View>
+          <ThemedText style={styles.sectionTitle}>For You</ThemedText>
+
+          {trendingLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#000" />
+            </View>
+          ) : trendingError ? (
+            <View style={styles.errorContainer}>
+              <ThemedText style={styles.errorText}>Error loading products</ThemedText>
+            </View>
+          ) : trendingProducts.length > 0 ? (
+            <View style={styles.productsGrid}>
+              {trendingProducts.map((product: Product) => (
+                <TouchableOpacity
+                  key={product.id}
+                  style={styles.productCard}
+                  onPress={() => handleProductPress(product.id)}
+                  activeOpacity={0.9}
+                >
+                  <Image
+                    source={getLocalAsset(product.primaryImage.url)}
+                    style={styles.productImage}
+                    contentFit="cover"
+                  />
+                  <View style={styles.productInfo}>
+                    <View style={styles.productHeader}>
+                      {product.merchant.logo && (
+                        <Image
+                          source={getLocalAsset(product.merchant.logo.url)}
+                          style={styles.productArtistImage}
+                        />
+                      )}
+                      <ThemedText style={styles.productArtistName} numberOfLines={1}>
+                        {product.merchant.displayName}
+                      </ThemedText>
+                    </View>
+                    <ThemedText style={styles.productTitle} numberOfLines={2}>
+                      {product.name}
+                    </ThemedText>
+                    <View style={styles.productFooter}>
+                      <ThemedText style={styles.productPrice}>{product.price.formatted}</ThemedText>
+                      {product.socialStats && (
+                        <View style={styles.productLikes}>
+                          <IconSymbol name="heart.fill" size={12} color="#ff0000" />
+                          <ThemedText style={styles.productLikesText}>
+                            {product.socialStats.likes >= 1000
+                              ? `${(product.socialStats.likes / 1000).toFixed(1)}K`
+                              : product.socialStats.likes}
+                          </ThemedText>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <ThemedText style={styles.emptyText}>No products available</ThemedText>
+            </View>
+          )}
         </View>
       </ScrollView>
     </ThemedView>
@@ -299,6 +449,30 @@ const styles = StyleSheet.create({
   horizontalScroll: {
     paddingLeft: 20,
   },
+  loadingContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  errorContainer: {
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#ff0000',
+    textAlign: 'center',
+  },
+  emptyContainer: {
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+  },
   collectionsContainer: {
     paddingRight: 20,
     gap: 16,
@@ -328,7 +502,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '100%',
-    background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
   },
@@ -365,16 +538,20 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     backgroundColor: '#f5f5f5',
   },
+  artistPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ddd',
+  },
+  artistInitial: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#666',
+  },
   artistName: {
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  artistFollowers: {
-    fontSize: 12,
-    color: '#666',
     textAlign: 'center',
     marginBottom: 12,
   },
@@ -399,7 +576,76 @@ const styles = StyleSheet.create({
   followingButtonText: {
     color: '#666',
   },
-  videosContainer: {
-    paddingTop: 8,
+  productsGrid: {
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  productCard: {
+    flexDirection: 'column',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    overflow: 'hidden',
+    width: '48%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  productImage: {
+    width: '100%',
+    height: 200,
+    backgroundColor: '#f5f5f5',
+  },
+  productInfo: {
+    padding: 12,
+  },
+  productHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  productArtistImage: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    marginRight: 4,
+  },
+  productArtistName: {
+    fontSize: 10,
+    color: '#666',
+    flex: 1,
+  },
+  productTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+    lineHeight: 18,
+  },
+  productFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  productPrice: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#000',
+    fontFamily: 'Didot',
+  },
+  productLikes: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  productLikesText: {
+    fontSize: 10,
+    color: '#666',
   },
 });

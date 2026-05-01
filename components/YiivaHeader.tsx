@@ -1,5 +1,6 @@
 import React from 'react';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 import { IconSymbol } from './ui/IconSymbol';
@@ -7,11 +8,14 @@ import { IconSymbol } from './ui/IconSymbol';
 interface YiivaHeaderProps {
   onMenuPress: () => void;
   onCartPress: () => void;
+  onNotificationsPress: () => void;
 }
 
-export function YiivaHeader({ onMenuPress, onCartPress }: YiivaHeaderProps) {
+export function YiivaHeader({ onMenuPress, onCartPress, onNotificationsPress }: YiivaHeaderProps) {
+  const insets = useSafeAreaInsets();
+
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={[styles.container, { paddingTop: insets.top + 16 }]}>
       <TouchableOpacity onPress={onMenuPress} style={styles.menuButton}>
         <View style={styles.menuIcon}>
           <View style={styles.menuLine} />
@@ -26,9 +30,14 @@ export function YiivaHeader({ onMenuPress, onCartPress }: YiivaHeaderProps) {
         resizeMode="contain"
       />
       
-      <TouchableOpacity onPress={onCartPress} style={styles.cartButton}>
-        <IconSymbol size={24} name="cart" color="#333" />
-      </TouchableOpacity>
+      <View style={styles.rightActions}>
+        <TouchableOpacity onPress={onNotificationsPress} style={styles.notificationsButton}>
+          <IconSymbol size={24} name="bell" color="#333" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onCartPress} style={styles.cartButton}>
+          <IconSymbol size={24} name="cart" color="#333" />
+        </TouchableOpacity>
+      </View>
     </ThemedView>
   );
 }
@@ -39,7 +48,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingTop: 16,
     paddingBottom: 6,
     backgroundColor: '#fff',
   },
@@ -58,6 +67,14 @@ const styles = StyleSheet.create({
   logo: {
     height: 32,
     width: 120,
+  },
+  rightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  notificationsButton: {
+    padding: 8,
   },
   cartButton: {
     padding: 8,
